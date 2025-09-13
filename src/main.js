@@ -175,12 +175,6 @@ window.addEventListener('load', async function() {
                     }
                 }
 
-                if (this.gameState === 'playing') {
-                    if (e.code === 'ArrowUp' || e.code === 'Space') {
-                        this.player.jump();
-                    }
-                }
-
                 if (e.code === 'ShiftLeft' && this.gameState === 'playing') {
                     this.audioManager.init();
                     this.timeManager.toggle();

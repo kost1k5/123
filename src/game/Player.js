@@ -17,7 +17,8 @@ export class Player {
         this.facingDirection = 1;
 
         this.jumps = 0;
-        this.maxJumps = 2;
+        this.maxJumps = 2; // Это будет проигнорировано для бесконечного прыжка
+        this.isJumping = false; // Флаг для отслеживания состояния нажатия клавиши прыжка
 
         this.audioManager = audioManager;
         this.timeManager = timeManager;
@@ -25,7 +26,7 @@ export class Player {
 
         // Физические константы
         this.gravity = 980;
-        this.moveSpeed = 250;
+        this.moveSpeed = 85; // Уменьшено по просьбе пользователя (было 250)
         this.jumpForce = 500;
         this.maxSpeedX = 300;
         this.terminalVelocityY = 1000;
@@ -47,6 +48,14 @@ export class Player {
         this.wasGrounded = this.isGrounded;
         const dt = deltaTime / 1000;
 
+        // --- Обработка прыжка ---
+        const jumpPressed = input.keys.has('Space') || input.keys.has('ArrowUp');
+        if (jumpPressed && !this.isJumping) {
+            this.jump();
+        }
+        this.isJumping = jumpPressed;
+
+
         // Если стоим на платформе, двигаемся вместе с ней
         if (this.onPlatform) {
             this.position.x += this.onPlatform.velocity.x * this.onPlatform.direction * dt;
@@ -64,8 +73,19 @@ export class Player {
             if (Math.abs(this.velocity.x) < 0.1) this.velocity.x = 0;
         }
         this.velocity.x = Math.max(-this.maxSpeedX, Math.min(this.maxSpeedX, this.velocity.x));
-        this.position.x += this.velocity.x;
+        this.position.x += this.velocity.x * dt; // Упс, здесь не хватало dt
         this.handleCollisions('horizontal', level);
+
+        // --- Ограничения по границам мира ---
+        const levelPixelWidth = level.width * level.tileSize;
+        if (this.position.x < 0) {
+            this.position.x = 0;
+            this.velocity.x = 0;
+        } else if (this.position.x > levelPixelWidth - this.width) {
+            this.position.x = levelPixelWidth - this.width;
+            this.velocity.x = 0;
+        }
+
 
         // --- Вертикальное движение ---
         this.velocity.y += this.gravity * dt;
@@ -107,23 +127,22 @@ export class Player {
     }
 
     jump() {
-        if (this.jumps < this.maxJumps) {
-            this.velocity.y = -this.jumpForce;
-            this.isGrounded = false;
-            this.jumps++;
-            this.audioManager.playSound('jump', this.timeManager.timeScale);
-            // Эффект прыжка
-            this.particleSystem.emit({
-                x: this.position.x + this.width / 2,
-                y: this.position.y + this.height,
-                count: 5,
-                color: 'white',
-                speed: 50,
-                lifetime: 400,
-                size: 2,
-                gravity: 200 // Частицы падают вниз
-            });
-        }
+        // Убрано ограничение на количество прыжков по просьбе пользователя
+        this.velocity.y = -this.jumpForce;
+        this.isGrounded = false;
+        // this.jumps++; // Счетчик больше не нужен в контексте бесконечных прыжков
+        this.audioManager.playSound('jump', this.timeManager.timeScale);
+        // Эффект прыжка
+        this.particleSystem.emit({
+            x: this.position.x + this.width / 2,
+            y: this.position.y + this.height,
+            count: 5,
+            color: 'white',
+            speed: 50,
+            lifetime: 400,
+            size: 2,
+            gravity: 200 // Частицы падают вниз
+        });
     }
 
     updateAnimationState() {

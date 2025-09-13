@@ -7,18 +7,13 @@ export class InputHandler {
 
         // --- Клавиатура ---
         window.addEventListener('keydown', (e) => {
-            // Клавиши прыжка (Space, ArrowUp) обрабатываются как одноразовые действия в main.js,
-            // а не как состояния в InputHandler. Поэтому мы их здесь игнорируем.
-            if (e.code === 'Space' || e.code === 'ArrowUp') return;
-
-            if (['ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'ShiftLeft'].includes(e.code)) {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Enter', 'ShiftLeft'].includes(e.code)) {
                 e.preventDefault();
             }
             this.keys.add(e.code);
         });
 
         window.addEventListener('keyup', (e) => {
-            if (e.code === 'Space' || e.code === 'ArrowUp') return;
             this.keys.delete(e.code);
         });
 
@@ -29,8 +24,10 @@ export class InputHandler {
                 const rect = this.canvas.getBoundingClientRect();
                 const scaleX = this.canvas.width / rect.width;
                 const scaleY = this.canvas.height / rect.height;
-                const x = (e.clientX - rect.left) * scaleX;
-                const y = (e.clientY - rect.top) * scaleY;
+                // Используем offsetX/Y, которые уже дают координаты относительно элемента,
+                // и масштабируем их к внутреннему разрешению холста.
+                const x = e.offsetX * scaleX;
+                const y = e.offsetY * scaleY;
                 this.ui.handleMouseClick(x, y);
             }
         });
