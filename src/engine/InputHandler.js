@@ -25,8 +25,8 @@ export class InputHandler {
                     const x = (touch.clientX - rect.left) * (this.canvas.width / rect.width);
                     const y = (touch.clientY - rect.top) * (this.canvas.height / rect.height);
 
-                    for (const buttonName in this.ui.buttons) {
-                        const btn = this.ui.buttons[buttonName];
+                    for (const buttonName in this.ui.touchControls) {
+                        const btn = this.ui.touchControls[buttonName];
                         // Простая проверка столкновения точки с кругом
                         const dx = x - (btn.x + btn.width / 2);
                         const dy = y - (btn.y + btn.height / 2);
