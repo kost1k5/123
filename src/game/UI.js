@@ -92,6 +92,11 @@ export class UI {
         context.fillText(`Счет: ${this.game.score}`, 20, 30);
         context.textAlign = 'right';
         context.fillText(`Рекорд: ${this.game.highScore}`, this.game.width - 20, 30);
+
+        // Отображение статуса звука (Mute)
+        context.textAlign = 'center';
+        const soundStatus = this.game.audioManager.isMuted ? 'Выкл' : 'Вкл';
+        context.fillText(`Звук (M): ${soundStatus}`, this.game.width / 2, 30);
     }
 
     drawMainMenu(context) {
@@ -108,6 +113,12 @@ export class UI {
             const button = this.menuButtons[key];
             this.drawButton(context, button);
         }
+
+        // Инструкции по управлению
+        context.fillStyle = 'white';
+        context.font = `16px ${this.fontFamily}`;
+        context.textAlign = 'center';
+        context.fillText('Управление: ← → (движение), Пробел (прыжок), M (звук)', this.game.width / 2, this.game.height - 30);
     }
 
     drawSettingsMenu(context) {

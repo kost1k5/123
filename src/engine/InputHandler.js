@@ -7,12 +7,18 @@ export class InputHandler {
 
         // --- Клавиатура ---
         window.addEventListener('keydown', (e) => {
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Enter', 'ShiftLeft'].includes(e.code)) {
+            // Клавиши прыжка (Space, ArrowUp) обрабатываются как одноразовые действия в main.js,
+            // а не как состояния в InputHandler. Поэтому мы их здесь игнорируем.
+            if (e.code === 'Space' || e.code === 'ArrowUp') return;
+
+            if (['ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'ShiftLeft'].includes(e.code)) {
                 e.preventDefault();
             }
             this.keys.add(e.code);
         });
+
         window.addEventListener('keyup', (e) => {
+            if (e.code === 'Space' || e.code === 'ArrowUp') return;
             this.keys.delete(e.code);
         });
 

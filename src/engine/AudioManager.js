@@ -6,6 +6,18 @@ export class AudioManager {
         this.audioCache = {};
         this.isUnlocked = false;
         this.volume = 1.0;
+        this.isMuted = false;
+        this.volumeBeforeMute = 1.0;
+    }
+
+    toggleMute() {
+        this.isMuted = !this.isMuted;
+        if (this.isMuted) {
+            this.volumeBeforeMute = this.volume;
+            this.setVolume(0);
+        } else {
+            this.setVolume(this.volumeBeforeMute);
+        }
     }
 
     // Этот метод нужно вызвать по первому действию пользователя (клик, нажатие клавиши)

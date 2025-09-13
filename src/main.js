@@ -192,6 +192,10 @@ window.addEventListener('load', async function() {
                         this.leaderboardData = await this.leaderboard.fetchScores();
                     }
                 }
+
+                if (e.code === 'KeyM' && this.gameState === 'playing') {
+                    this.audioManager.toggleMute();
+                }
             });
 
             canvas.addEventListener('touchstart', () => this.audioManager.init(), { once: true });
@@ -288,13 +292,21 @@ window.addEventListener('load', async function() {
 
     function gameLoop(timestamp) {
         if (!lastTime) lastTime = timestamp;
-        const deltaTime = timestamp - lastTime;
+        let deltaTime = timestamp - lastTime;
         lastTime = timestamp;
+
+        // Эвристика для предотвращения "спирали смерти" на медленных машинах или при переключении вкладок
+        if (deltaTime > 1000) {
+            deltaTime = 1000;
+        }
         lag += deltaTime;
 
-        while (lag >= TIMESTEP) {
+        let updates = 0;
+        const maxUpdatesPerFrame = 10; // Предотвращаем зависание, если игра сильно отстает
+        while (lag >= TIMESTEP && updates < maxUpdatesPerFrame) {
             update(TIMESTEP);
             lag -= TIMESTEP;
+            updates++;
         }
 
         draw();
