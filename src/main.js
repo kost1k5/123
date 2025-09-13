@@ -1,5 +1,6 @@
 import { InputHandler } from './engine/InputHandler.js';
 import { Player } from './game/Player.js';
+import { Enemy } from './game/Enemy.js';
 import { Level } from './game/Level.js';
 import { AssetManager } from './engine/AssetManager.js';
 import { TimeManager } from './engine/TimeManager.js';
@@ -19,9 +20,11 @@ window.addEventListener('load', async function() {
         height: canvas.height,
         score: 0,
         highScore: 0,
-        gameOver: false,
+        gameState: 'playing', // 'playing', 'gameOver', 'enteringName'
+        playerName: '',
         showLeaderboard: false,
         leaderboardData: null,
+        enemies: [],
 
         init() {
             this.assetManager = new AssetManager();
@@ -56,12 +59,53 @@ window.addEventListener('load', async function() {
                 timeManager: this.timeManager
             });
 
+            this.playerData = playerData; // Сохраняем для перезапуска
+            const enemyData = entitiesData.filter(e => e.type === 'enemy');
+            this.enemyData = enemyData; // Сохраняем для перезапуска
+            this.enemies = enemyData.map(data => new Enemy(data.x, data.y));
+
+
             this.setupEventListeners();
+        },
+
+        restart() {
+            this.score = 0;
+            this.gameState = 'playing';
+            this.playerName = '';
+            this.showLeaderboard = false;
+
+            this.player = new Player(this.playerData.x, this.playerData.y, {
+                spritesheet: this.assetManager.getAsset('assets/images/player_spritesheet.png'),
+                audioManager: this.audioManager,
+                timeManager: this.timeManager
+            });
+            this.enemies = this.enemyData.map(data => new Enemy(data.x, data.y));
         },
 
         setupEventListeners() {
             window.addEventListener('keydown', async (e) => {
-                if (e.code === 'ShiftLeft') {
+                if (this.gameState === 'enteringName') {
+                    if (e.key.length === 1 && this.playerName.length < 15) { // Простое добавление символов
+                        this.playerName += e.key;
+                    } else if (e.code === 'Backspace') {
+                        this.playerName = this.playerName.slice(0, -1);
+                    } else if (e.code === 'Enter' && this.playerName.length > 0) {
+                        await this.leaderboard.submitScore(this.playerName, this.score);
+                        this.gameState = 'gameOver';
+                        this.playerName = '';
+                        this.showLeaderboard = true; // Показываем обновленную таблицу
+                        this.leaderboardData = await this.leaderboard.fetchScores();
+                    }
+                    return;
+                }
+
+                if (this.gameState === 'gameOver') {
+                    if (e.code === 'Enter') this.restart();
+                    if (e.code === 'KeyS' && this.score > 0) this.gameState = 'enteringName';
+                    // 'L' для таблицы лидеров обрабатывается ниже
+                }
+
+                if (e.code === 'ShiftLeft' && this.gameState === 'playing') {
                     this.audioManager.init();
                     this.timeManager.toggle();
                 }
@@ -81,20 +125,38 @@ window.addEventListener('load', async function() {
     await game.setup();
 
     function update(timestep) {
-        if (game.gameOver || game.showLeaderboard) return;
+        if (game.gameState !== 'playing' || game.showLeaderboard) return;
 
         const scaledTimeStep = timestep * game.timeManager.timeScale;
-        game.player.update(scaledTimeStep, game.inputHandler, game.level);
+        const playerStatus = game.player.update(scaledTimeStep, game.inputHandler, game.level, game.enemies);
+        if (playerStatus.gameOver) {
+            game.gameState = 'gameOver';
+        }
+
+        // Обновляем врагов и проверяем, были ли они побеждены
+        const activeEnemies = [];
+        for (const enemy of game.enemies) {
+            if (enemy.isActive) {
+                enemy.update(scaledTimeStep);
+                activeEnemies.push(enemy);
+            } else {
+                game.score += 100; // Начисляем очки за побежденного врага
+            }
+        }
+        game.enemies = activeEnemies;
+
+
         game.score += Math.round(timestep / 100);
 
         if (game.player.position.y > game.height) {
-            game.gameOver = true;
+            game.gameState = 'gameOver';
+        }
+
+        if (game.gameState === 'gameOver') {
             if (game.score > game.highScore) {
                 game.highScore = game.score;
                 game.saveManager.save({ highScore: game.highScore });
             }
-            // Автоматическая отправка рекорда
-            game.leaderboard.submitScore('Player', game.score);
         }
     }
 
@@ -102,6 +164,7 @@ window.addEventListener('load', async function() {
         ctx.clearRect(0, 0, game.width, game.height);
         game.level.draw(ctx);
         game.player.draw(ctx);
+        game.enemies.forEach(enemy => enemy.draw(ctx));
         game.ui.draw(ctx);
     }
 

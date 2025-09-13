@@ -28,9 +28,11 @@ export class UI {
             this.drawMobileControls(context);
         }
 
-        // Отрисовка экрана "Game Over"
-        if (this.game.gameOver) {
+        // Отрисовка экранов состояния игры
+        if (this.game.gameState === 'gameOver') {
             this.drawGameOver(context);
+        } else if (this.game.gameState === 'enteringName') {
+            this.drawNameInput(context);
         }
 
         // Отрисовка таблицы лидеров
@@ -57,10 +59,46 @@ export class UI {
         context.fillStyle = 'white';
         context.textAlign = 'center';
         context.font = '40px ' + this.fontFamily;
-        context.fillText('ИГРА ОКОНЧЕНА', this.game.width / 2, this.game.height / 2 - 40);
+        context.fillText('ИГРА ОКОНЧЕНА', this.game.width / 2, this.game.height / 2 - 80);
         context.font = '20px ' + this.fontFamily;
-        context.fillText(`Ваш счет: ${this.game.score}`, this.game.width / 2, this.game.height / 2);
-        context.fillText('Нажмите "L" для таблицы лидеров', this.game.width / 2, this.game.height / 2 + 40);
+        context.fillText(`Ваш счет: ${this.game.score}`, this.game.width / 2, this.game.height / 2 - 20);
+        context.fillText(`Рекорд: ${this.game.highScore}`, this.game.width / 2, this.game.height / 2 + 10);
+
+        let yPos = this.game.height / 2 + 50;
+        if (this.game.score > 0) {
+            context.fillText('Нажмите "S" для отправки рекорда', this.game.width / 2, yPos);
+            yPos += 30;
+        }
+        context.fillText('Нажмите "Enter" для перезапуска', this.game.width / 2, yPos);
+        yPos += 30;
+        context.fillText('Нажмите "L" для таблицы лидеров', this.game.width / 2, yPos);
+    }
+
+    drawNameInput(context) {
+        context.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        context.fillRect(0, 0, this.game.width, this.game.height);
+        context.fillStyle = 'white';
+        context.textAlign = 'center';
+        context.font = '30px ' + this.fontFamily;
+        context.fillText('Введите ваше имя:', this.game.width / 2, this.game.height / 2 - 60);
+
+        // Поле для ввода
+        const boxX = this.game.width / 2 - 150;
+        const boxY = this.game.height / 2 - 25;
+        const boxWidth = 300;
+        const boxHeight = 50;
+        context.strokeStyle = 'white';
+        context.lineWidth = 2;
+        context.strokeRect(boxX, boxY, boxWidth, boxHeight);
+
+        context.font = '30px ' + this.fontFamily;
+        context.textAlign = 'left';
+        const cursor = (Math.floor(Date.now() / 500) % 2 === 0) ? '|' : '';
+        context.fillText(this.game.playerName + cursor, boxX + 10, boxY + 35);
+
+        context.font = '16px ' + this.fontFamily;
+        context.textAlign = 'center';
+        context.fillText('Нажмите Enter для подтверждения', this.game.width / 2, this.game.height / 2 + 60);
     }
 
     drawLeaderboard(context) {
