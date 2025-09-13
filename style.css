@@ -1,0 +1,24 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    background-color: #1a1a1a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+canvas {
+    background-color: #000;
+    display: block;
+
+    /* Адаптивность */
+    width: 100%;
+    height: 100%;
+    max-width: 960px; /* Максимальная ширина игры */
+    object-fit: contain; /* Сохраняет пропорции */
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -webkit-crisp-edges;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
