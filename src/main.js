@@ -190,7 +190,7 @@ window.addEventListener('load', async function() {
                 if (this.ui.isReady()) {
                     this.ui.handleMouseClick(e.offsetX, e.offsetY);
                 }
-            });
+            }, { capture: true });
 
             canvas.addEventListener('touchstart', () => this.audioManager.init(), { once: true });
         }
