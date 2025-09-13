@@ -14,6 +14,10 @@ export class Player {
         this.wasGrounded = false; // Для отслеживания приземления
         this.facingDirection = 1;
 
+        // --- Прыжки ---
+        this.maxJumps = 2;
+        this.jumpsLeft = this.maxJumps;
+
         this.audioManager = audioManager;
         this.timeManager = timeManager;
 
@@ -38,7 +42,7 @@ export class Player {
         });
     }
 
-    update(deltaTime, input, level, enemies) {
+    update(deltaTime, input, level, enemies, goal) {
         this.wasGrounded = this.isGrounded;
         const dt = deltaTime / 1000;
 
@@ -58,10 +62,15 @@ export class Player {
         this.handleCollisions('horizontal', level);
 
         // --- Вертикальное движение ---
-        if ((input.keys.has('ArrowUp') || input.keys.has('Space')) && this.isGrounded) {
-            this.velocity.y = -this.jumpForce;
-            this.isGrounded = false;
-            this.audioManager.playSound('jump', this.timeManager.timeScale);
+        if ((input.keys.has('ArrowUp') || input.keys.has('Space'))) {
+            if (this.jumpsLeft > 0) {
+                this.velocity.y = -this.jumpForce;
+                this.jumpsLeft--;
+                this.isGrounded = false; // На случай если прыжок с земли
+                this.audioManager.playSound('jump', this.timeManager.timeScale);
+                input.keys.delete('ArrowUp'); // Предотвращаем "залипание" прыжка
+                input.keys.delete('Space');
+            }
         }
         this.velocity.y += this.gravity * dt;
         if (this.velocity.y > this.terminalVelocityY) this.velocity.y = this.terminalVelocityY;
@@ -72,19 +81,25 @@ export class Player {
 
         // Проверка приземления
         if (this.isGrounded && !this.wasGrounded) {
+            this.jumpsLeft = this.maxJumps;
             this.audioManager.playSound('land', this.timeManager.timeScale);
         }
 
         // --- Столкновения с врагами ---
         const enemyCollision = this.handleEnemyCollisions(enemies);
         if (enemyCollision.gameOver) {
-            return { gameOver: true };
+            return { gameOver: true, levelComplete: false };
+        }
+
+        // --- Столкновение с целью ---
+        if (goal && checkAABBCollision(this, goal)) {
+            return { gameOver: false, levelComplete: true };
         }
 
         // --- Обновление анимации ---
         this.updateAnimationState();
         this.sprite.update(deltaTime * this.timeManager.timeScale); // Анимация тоже замедляется
-        return { gameOver: false };
+        return { gameOver: false, levelComplete: false };
     }
 
     updateAnimationState() {

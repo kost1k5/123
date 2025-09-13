@@ -1,6 +1,7 @@
 import { InputHandler } from './engine/InputHandler.js';
 import { Player } from './game/Player.js';
 import { Enemy } from './game/Enemy.js';
+import { Goal } from './game/Goal.js';
 import { Level } from './game/Level.js';
 import { AssetManager } from './engine/AssetManager.js';
 import { TimeManager } from './engine/TimeManager.js';
@@ -20,11 +21,17 @@ window.addEventListener('load', async function() {
         height: canvas.height,
         score: 0,
         highScore: 0,
-        gameState: 'playing', // 'playing', 'gameOver', 'enteringName'
+        gameState: 'playing', // 'playing', 'gameOver', 'enteringName', 'gameWon'
         playerName: '',
         showLeaderboard: false,
         leaderboardData: null,
         enemies: [],
+        goal: null,
+        levels: [
+            'assets/levels/level1.json',
+            'assets/levels/level2.json'
+        ],
+        currentLevelIndex: 0,
 
         init() {
             this.assetManager = new AssetManager();
@@ -46,26 +53,44 @@ window.addEventListener('load', async function() {
 
             await this.audioManager.loadSounds([
                 { name: 'jump', path: 'assets/audio/jump.wav' },
-                { name: 'land', path: 'assets/audio/land.wav' }
+                { name: 'land', path: 'assets/audio/land.wav' },
+                // ЗАМЕЧАНИЕ: Файл 'enemy_stomp.wav' должен быть добавлен в 'assets/audio/'.
+                // { name: 'enemy_stomp', path: 'assets/audio/enemy_stomp.wav' }
             ]);
 
-            const entitiesData = await this.level.load('assets/levels/level1.json');
-            const playerData = entitiesData.find(e => e.type === 'player');
-            const playerSpritesheet = this.assetManager.getAsset('assets/images/player_spritesheet.png');
+            await this.loadLevel(this.currentLevelIndex);
+            this.setupEventListeners();
+        },
 
+        async loadLevel(levelIndex) {
+            const levelPath = this.levels[levelIndex];
+            const entitiesData = await this.level.load(levelPath);
+
+            const playerData = entitiesData.find(e => e.type === 'player');
             this.player = new Player(playerData.x, playerData.y, {
-                spritesheet: playerSpritesheet,
+                spritesheet: this.assetManager.getAsset('assets/images/player_spritesheet.png'),
                 audioManager: this.audioManager,
                 timeManager: this.timeManager
             });
 
-            this.playerData = playerData; // Сохраняем для перезапуска
             const enemyData = entitiesData.filter(e => e.type === 'enemy');
-            this.enemyData = enemyData; // Сохраняем для перезапуска
-            this.enemies = enemyData.map(data => new Enemy(data.x, data.y));
+            this.enemies = enemyData.map(data => new Enemy(data.x, data.y, {
+                // ЗАМЕЧАНИЕ: Используем спрайтшит игрока как временную заглушку.
+                // Его нужно заменить на спрайтшит врага, когда он будет готов.
+                spritesheet: this.assetManager.getAsset('assets/images/player_spritesheet.png')
+            }));
 
+            const goalData = entitiesData.find(e => e.type === 'goal');
+            this.goal = new Goal(goalData.x, goalData.y);
+        },
 
-            this.setupEventListeners();
+        async nextLevel() {
+            this.currentLevelIndex++;
+            if (this.currentLevelIndex >= this.levels.length) {
+                this.gameState = 'gameWon';
+            } else {
+                await this.loadLevel(this.currentLevelIndex);
+            }
         },
 
         restart() {
@@ -73,13 +98,8 @@ window.addEventListener('load', async function() {
             this.gameState = 'playing';
             this.playerName = '';
             this.showLeaderboard = false;
-
-            this.player = new Player(this.playerData.x, this.playerData.y, {
-                spritesheet: this.assetManager.getAsset('assets/images/player_spritesheet.png'),
-                audioManager: this.audioManager,
-                timeManager: this.timeManager
-            });
-            this.enemies = this.enemyData.map(data => new Enemy(data.x, data.y));
+            this.currentLevelIndex = 0;
+            this.loadLevel(this.currentLevelIndex);
         },
 
         setupEventListeners() {
@@ -99,10 +119,11 @@ window.addEventListener('load', async function() {
                     return;
                 }
 
-                if (this.gameState === 'gameOver') {
+                if (this.gameState === 'gameOver' || this.gameState === 'gameWon') {
                     if (e.code === 'Enter') this.restart();
-                    if (e.code === 'KeyS' && this.score > 0) this.gameState = 'enteringName';
-                    // 'L' для таблицы лидеров обрабатывается ниже
+                    if (e.code === 'KeyS' && this.score > 0 && this.gameState === 'gameOver') {
+                        this.gameState = 'enteringName';
+                    }
                 }
 
                 if (e.code === 'ShiftLeft' && this.gameState === 'playing') {
@@ -128,9 +149,12 @@ window.addEventListener('load', async function() {
         if (game.gameState !== 'playing' || game.showLeaderboard) return;
 
         const scaledTimeStep = timestep * game.timeManager.timeScale;
-        const playerStatus = game.player.update(scaledTimeStep, game.inputHandler, game.level, game.enemies);
+        const playerStatus = game.player.update(scaledTimeStep, game.inputHandler, game.level, game.enemies, game.goal);
         if (playerStatus.gameOver) {
             game.gameState = 'gameOver';
+        } else if (playerStatus.levelComplete) {
+            game.nextLevel();
+            return; // Пропускаем остаток апдейта, чтобы избежать ошибок
         }
 
         // Обновляем врагов и проверяем, были ли они побеждены
@@ -141,6 +165,7 @@ window.addEventListener('load', async function() {
                 activeEnemies.push(enemy);
             } else {
                 game.score += 100; // Начисляем очки за побежденного врага
+                game.audioManager.playSound('enemy_stomp'); // Проигрываем звук смерти врага
             }
         }
         game.enemies = activeEnemies;
@@ -163,6 +188,7 @@ window.addEventListener('load', async function() {
     function draw() {
         ctx.clearRect(0, 0, game.width, game.height);
         game.level.draw(ctx);
+        if (game.goal) game.goal.draw(ctx);
         game.player.draw(ctx);
         game.enemies.forEach(enemy => enemy.draw(ctx));
         game.ui.draw(ctx);

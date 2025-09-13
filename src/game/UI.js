@@ -33,6 +33,8 @@ export class UI {
             this.drawGameOver(context);
         } else if (this.game.gameState === 'enteringName') {
             this.drawNameInput(context);
+        } else if (this.game.gameState === 'gameWon') {
+            this.drawGameWon(context);
         }
 
         // Отрисовка таблицы лидеров
@@ -130,5 +132,17 @@ export class UI {
         context.textAlign = 'center';
         context.font = '16px ' + this.fontFamily;
         context.fillText('Нажмите "L", чтобы закрыть', this.game.width / 2, this.game.height - 40);
+    }
+
+    drawGameWon(context) {
+        context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        context.fillRect(0, 0, this.game.width, this.game.height);
+        context.fillStyle = 'white';
+        context.textAlign = 'center';
+        context.font = '40px ' + this.fontFamily;
+        context.fillText('ВЫ ПОБЕДИЛИ!', this.game.width / 2, this.game.height / 2 - 40);
+        context.font = '20px ' + this.fontFamily;
+        context.fillText(`Финальный счет: ${this.game.score}`, this.game.width / 2, this.game.height / 2);
+        context.fillText('Нажмите "Enter" для начала новой игры', this.game.width / 2, this.game.height / 2 + 40);
     }
 }
