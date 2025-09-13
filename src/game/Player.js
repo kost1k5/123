@@ -38,7 +38,7 @@ export class Player {
         });
     }
 
-    update(deltaTime, input, level) {
+    update(deltaTime, input, level, enemies) {
         this.wasGrounded = this.isGrounded;
         const dt = deltaTime / 1000;
 
@@ -75,9 +75,16 @@ export class Player {
             this.audioManager.playSound('land', this.timeManager.timeScale);
         }
 
+        // --- Столкновения с врагами ---
+        const enemyCollision = this.handleEnemyCollisions(enemies);
+        if (enemyCollision.gameOver) {
+            return { gameOver: true };
+        }
+
         // --- Обновление анимации ---
         this.updateAnimationState();
         this.sprite.update(deltaTime * this.timeManager.timeScale); // Анимация тоже замедляется
+        return { gameOver: false };
     }
 
     updateAnimationState() {
@@ -94,6 +101,27 @@ export class Player {
                 this.sprite.setState('idle');
             }
         }
+    }
+
+    handleEnemyCollisions(enemies) {
+        for (const enemy of enemies) {
+            if (!enemy.isActive) continue;
+
+            if (checkAABBCollision(this, enemy)) {
+                // Проверяем, что игрок падает и находится выше врага (прыжок сверху)
+                const isStomping = this.velocity.y > 0 &&
+                                   (this.position.y + this.height) < (enemy.position.y + enemy.height / 2);
+
+                if (isStomping) {
+                    enemy.isActive = false;
+                    this.velocity.y = -this.jumpForce * 0.6; // Отскок
+                } else {
+                    // Столкновение сбоку или снизу
+                    return { gameOver: true };
+                }
+            }
+        }
+        return { gameOver: false };
     }
 
     handleCollisions(axis, level) {
