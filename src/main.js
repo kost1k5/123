@@ -22,7 +22,7 @@ window.addEventListener('load', async function() {
         height: canvas.height,
         score: 0,
         highScore: 0,
-        gameState: 'playing', // 'playing', 'gameOver', 'enteringName', 'gameWon'
+        gameState: 'mainMenu', // 'mainMenu', 'playing', 'paused', 'settings', 'gameOver', 'enteringName', 'gameWon'
         playerName: '',
         showLeaderboard: false,
         leaderboardData: null,
@@ -56,7 +56,7 @@ window.addEventListener('load', async function() {
                 { name: 'enemy_stomp', path: 'assets/audio/enemy_stomp.mp3' }
             ]);
 
-            await this.loadLevel(this.currentLevelIndex);
+            // Не загружаем уровень сразу, ждем начала игры из меню
             this.setupEventListeners();
         },
 
@@ -86,13 +86,17 @@ window.addEventListener('load', async function() {
             }
         },
 
-        restart() {
+        async startGame() {
             this.score = 0;
             this.currentLevelIndex = 0;
+            await this.loadLevel(this.currentLevelIndex);
             this.gameState = 'playing';
-            this.playerName = '';
+        },
+
+        restart() {
+            this.gameState = 'mainMenu';
             this.showLeaderboard = false;
-            this.loadLevel(this.currentLevelIndex);
+            this.playerName = '';
         },
 
         setupEventListeners() {
@@ -120,6 +124,14 @@ window.addEventListener('load', async function() {
                     if (e.code === 'KeyS' && this.score > 0) this.gameState = 'enteringName';
                 }
 
+                if (e.code === 'Escape') {
+                    if (this.gameState === 'playing') {
+                        this.gameState = 'paused';
+                    } else if (this.gameState === 'paused') {
+                        this.gameState = 'playing';
+                    }
+                }
+
                 if (this.gameState === 'playing') {
                     if (e.code === 'ArrowUp' || e.code === 'Space') {
                         this.player.jump();
@@ -138,6 +150,13 @@ window.addEventListener('load', async function() {
                     }
                 }
             });
+
+            canvas.addEventListener('click', (e) => {
+                if (this.ui.isReady()) {
+                    this.ui.handleMouseClick(e.offsetX, e.offsetY);
+                }
+            });
+
             canvas.addEventListener('touchstart', () => this.audioManager.init(), { once: true });
         }
     };
@@ -190,10 +209,16 @@ window.addEventListener('load', async function() {
 
     function draw() {
         ctx.clearRect(0, 0, game.width, game.height);
-        game.level.draw(ctx);
-        if (game.goal) game.goal.draw(ctx);
-        game.player.draw(ctx);
-        game.enemies.forEach(enemy => enemy.draw(ctx));
+
+        // Рисуем игровой мир только если мы не в главном меню
+        if (game.gameState !== 'mainMenu') {
+            game.level.draw(ctx);
+            if (game.goal) game.goal.draw(ctx);
+            if (game.player) game.player.draw(ctx); // Проверяем, что игрок создан
+            game.enemies.forEach(enemy => enemy.draw(ctx));
+        }
+
+        // UI рисуется всегда, так как он управляет отображением меню
         game.ui.draw(ctx);
     }
 

@@ -1,8 +1,11 @@
 export class AudioManager {
     constructor() {
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        this.gainNode = this.audioContext.createGain();
+        this.gainNode.connect(this.audioContext.destination);
         this.audioCache = {};
         this.isUnlocked = false;
+        this.volume = 1.0;
     }
 
     // Этот метод нужно вызвать по первому действию пользователя (клик, нажатие клавиши)
@@ -11,6 +14,13 @@ export class AudioManager {
             this.audioContext.resume();
         }
         this.isUnlocked = true;
+    }
+
+    setVolume(volume) {
+        this.volume = Math.max(0, Math.min(1, volume)); // Ограничиваем от 0 до 1
+        if (this.gainNode) {
+            this.gainNode.gain.setValueAtTime(this.volume, this.audioContext.currentTime);
+        }
     }
 
     async loadSound(name, path) {
@@ -28,7 +38,6 @@ export class AudioManager {
             return audioBuffer;
         } catch (e) {
             console.error(`Failed to load sound: ${name} from ${path}`, e);
-            // Возвращаем null или кидаем ошибку, чтобы вызывающий код мог это обработать
             return null;
         }
     }
@@ -50,7 +59,7 @@ export class AudioManager {
         const source = this.audioContext.createBufferSource();
         source.buffer = audioBuffer;
         source.playbackRate.value = playbackRate;
-        source.connect(this.audioContext.destination);
+        source.connect(this.gainNode); // Подключаем к GainNode, а не к destination
         source.start(0);
     }
 }
