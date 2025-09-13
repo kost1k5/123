@@ -44,7 +44,8 @@ export class AudioManager {
 
     async loadSounds(sounds) {
         const promises = sounds.map(sound => this.loadSound(sound.name, sound.path));
-        await Promise.all(promises);
+        // Используем allSettled, чтобы одна неудачная загрузка не прервала все остальные.
+        await Promise.allSettled(promises);
     }
 
     playSound(name, playbackRate = 1.0) {
