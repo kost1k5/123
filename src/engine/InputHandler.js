@@ -20,7 +20,12 @@ export class InputHandler {
         this.canvas.addEventListener('click', (e) => {
             // Мышь используется только для UI в меню
             if (['mainMenu', 'settings'].includes(this.ui.game.gameState)) {
-                this.ui.handleMouseClick(e.offsetX, e.offsetY);
+                const rect = this.canvas.getBoundingClientRect();
+                const scaleX = this.canvas.width / rect.width;
+                const scaleY = this.canvas.height / rect.height;
+                const x = (e.clientX - rect.left) * scaleX;
+                const y = (e.clientY - rect.top) * scaleY;
+                this.ui.handleMouseClick(x, y);
             }
         });
 

@@ -122,6 +122,14 @@ window.addEventListener('load', async function() {
         },
 
         async startGame() {
+            if (window.screen && screen.orientation && screen.orientation.lock) {
+                try {
+                    await screen.orientation.lock('landscape');
+                } catch (err) {
+                    console.error('Orientation lock failed:', err);
+                }
+            }
+
             this.score = 0;
             this.currentLevelIndex = 0;
             await this.loadLevel(this.currentLevelIndex);
