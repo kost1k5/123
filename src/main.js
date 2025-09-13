@@ -28,7 +28,7 @@ window.addEventListener('load', async function() {
         leaderboardData: null,
         enemies: [],
         goal: null,
-        levels: ['assets/levels/level1.json', 'assets/levels/level2.json'],
+        levels: ['./assets/levels/level1.json', './assets/levels/level2.json'],
         currentLevelIndex: 0,
 
         init() {
@@ -46,14 +46,14 @@ window.addEventListener('load', async function() {
         },
 
         async setup() {
-            this.assetManager.queueDownload('assets/images/player_spritesheet.png');
-            this.assetManager.queueDownload('assets/images/enemy_walk.png');
+            this.assetManager.queueDownload('./assets/images/player_spritesheet.png');
+            this.assetManager.queueDownload('./assets/images/enemy_walk.png');
             await this.assetManager.downloadAll();
 
             await this.audioManager.loadSounds([
-                { name: 'jump', path: 'assets/audio/jump.wav' },
-                { name: 'land', path: 'assets/audio/land.wav' },
-                { name: 'enemy_stomp', path: 'assets/audio/enemy_stomp.mp3' }
+                { name: 'jump', path: './assets/audio/jump.wav' },
+                { name: 'land', path: './assets/audio/land.wav' },
+                { name: 'enemy_stomp', path: './assets/audio/enemy_stomp.mp3' }
             ]);
 
             // Не загружаем уровень сразу, ждем начала игры из меню
@@ -65,7 +65,7 @@ window.addEventListener('load', async function() {
             const entitiesData = await this.level.load(levelPath);
 
             const playerData = entitiesData.find(e => e.type === 'player');
-            const playerSpritesheet = this.assetManager.getAsset('assets/images/player_spritesheet.png');
+            const playerSpritesheet = this.assetManager.getAsset('./assets/images/player_spritesheet.png');
             this.player = new Player(playerData.x, playerData.y, {
                 spritesheet: playerSpritesheet,
                 audioManager: this.audioManager,
@@ -73,7 +73,7 @@ window.addEventListener('load', async function() {
             });
 
             const enemyData = entitiesData.filter(e => e.type === 'enemy');
-            const enemySpritesheet = this.assetManager.getAsset('assets/images/enemy_walk.png');
+            const enemySpritesheet = this.assetManager.getAsset('./assets/images/enemy_walk.png');
             this.enemies = enemyData.map(data => new Enemy(data.x, data.y, {
                 spritesheet: enemySpritesheet
             }));
