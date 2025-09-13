@@ -175,7 +175,7 @@ window.addEventListener('load', async function() {
                     }
                 }
 
-                if (e.code === 'ShiftLeft' && this.gameState === 'playing') {
+                if (e.code === 'KeyC' && this.gameState === 'playing') { // Изменено на 'C'
                     this.audioManager.init();
                     this.timeManager.toggle();
                 }

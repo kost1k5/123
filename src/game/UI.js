@@ -97,6 +97,12 @@ export class UI {
         context.textAlign = 'center';
         const soundStatus = this.game.audioManager.isMuted ? 'Выкл' : 'Вкл';
         context.fillText(`Звук (M): ${soundStatus}`, this.game.width / 2, 30);
+
+        // Индикатор замедления времени
+        if (this.game.timeManager.isSlowed) {
+            context.fillStyle = 'cyan';
+            context.fillText('Slow Motion', this.game.width / 2, 60);
+        }
     }
 
     drawMainMenu(context) {
@@ -118,7 +124,7 @@ export class UI {
         context.fillStyle = 'rgba(255, 255, 255, 0.7)';
         context.font = `18px ${this.fontFamily}`;
         context.textAlign = 'center';
-        context.fillText('Управление: ← → (движение), Пробел (прыжок), M (звук)', this.game.width / 2, this.game.height - 50);
+        context.fillText('Управление: ← → (движение), Пробел (прыжок), C (время), M (звук)', this.game.width / 2, this.game.height - 50);
     }
 
     drawSettingsMenu(context) {
