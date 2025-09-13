@@ -19,8 +19,4 @@ canvas {
     height: 100%;
     max-width: 960px; /* Максимальная ширина игры */
     object-fit: contain; /* Сохраняет пропорции */
-    image-rendering: -moz-crisp-edges;
-    image-rendering: -webkit-crisp-edges;
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
 }
