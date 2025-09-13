@@ -2,7 +2,7 @@ export class UI {
     constructor(game) {
         this.game = game;
         this.fontSize = 24;
-        this.fontFamily = 'Helvetica';
+        this.fontFamily = '"Source Sans Pro", sans-serif';
         this.isTouchDevice = 'ontouchstart' in window;
 
         this.menuButtons = {

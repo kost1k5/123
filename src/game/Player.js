@@ -3,7 +3,7 @@ import { checkAABBCollision } from '../utils/Collision.js';
 import { Sprite } from '../engine/Sprite.js';
 
 export class Player {
-    constructor(x, y, { spritesheet, audioManager, timeManager }) {
+    constructor(x, y, { sprites, audioManager, timeManager, particleSystem }) {
         this.position = new Vec2(x, y);
         this.velocity = new Vec2(0, 0);
 
@@ -12,6 +12,8 @@ export class Player {
 
         this.isGrounded = false;
         this.wasGrounded = false; // Для отслеживания приземления
+        this.onPlatform = null; // Платформа, на которой стоит игрок
+        this.hasKey = false;
         this.facingDirection = 1;
 
         this.jumps = 0;
@@ -19,6 +21,7 @@ export class Player {
 
         this.audioManager = audioManager;
         this.timeManager = timeManager;
+        this.particleSystem = particleSystem;
 
         // Физические константы
         this.gravity = 980;
@@ -29,21 +32,25 @@ export class Player {
         this.friction = 0.90;
 
         this.sprite = new Sprite({
-            image: spritesheet,
             frameWidth: this.width,
             frameHeight: this.height,
             animations: {
-                idle: { row: 0, frameCount: 4, frameInterval: 200 },
-                run: { row: 1, frameCount: 8, frameInterval: 100 },
-                jump: { row: 2, frameCount: 1, frameInterval: 100 },
-                fall: { row: 3, frameCount: 1, frameInterval: 100 },
+                idle: { image: sprites.idle, row: 0, frameCount: 4, frameInterval: 200 },
+                run: { image: sprites.run, row: 1, frameCount: 8, frameInterval: 100 },
+                jump: { image: sprites.jump, row: 2, frameCount: 1, frameInterval: 100 },
+                fall: { image: sprites.fall, row: 3, frameCount: 1, frameInterval: 100 },
             }
         });
     }
 
-    update(deltaTime, input, level, enemies) {
+    update(deltaTime, input, level, enemies, platforms, keys, doors) {
         this.wasGrounded = this.isGrounded;
         const dt = deltaTime / 1000;
+
+        // Если стоим на платформе, двигаемся вместе с ней
+        if (this.onPlatform) {
+            this.position.x += this.onPlatform.velocity.x * this.onPlatform.direction * dt;
+        }
 
         // --- Горизонтальное движение ---
         if (input.keys.has('ArrowLeft')) {
@@ -65,16 +72,29 @@ export class Player {
         if (this.velocity.y > this.terminalVelocityY) this.velocity.y = this.terminalVelocityY;
 
         this.isGrounded = false;
+        this.onPlatform = null; // Сбрасываем платформу каждый кадр
         this.position.y += this.velocity.y * dt;
-        this.handleCollisions('vertical', level);
+        this.handleCollisions('vertical', level, platforms, doors);
 
         // Проверка приземления
         if (this.isGrounded && !this.wasGrounded) {
             this.jumps = 0;
             this.audioManager.playSound('land', this.timeManager.timeScale);
+            // Эффект приземления
+            this.particleSystem.emit({
+                x: this.position.x + this.width / 2,
+                y: this.position.y + this.height,
+                count: 8,
+                color: '#D2B48C', // Tan
+                speed: 80,
+                lifetime: 300,
+                size: 3,
+                gravity: -200 // Частицы летят вверх
+            });
         }
 
-        // --- Столкновения с врагами ---
+        // --- Столкновения с предметами и врагами ---
+        this.handleItemCollisions(keys, doors);
         const enemyCollision = this.handleEnemyCollisions(enemies);
         if (enemyCollision.gameOver) {
             return { gameOver: true };
@@ -92,6 +112,17 @@ export class Player {
             this.isGrounded = false;
             this.jumps++;
             this.audioManager.playSound('jump', this.timeManager.timeScale);
+            // Эффект прыжка
+            this.particleSystem.emit({
+                x: this.position.x + this.width / 2,
+                y: this.position.y + this.height,
+                count: 5,
+                color: 'white',
+                speed: 50,
+                lifetime: 400,
+                size: 2,
+                gravity: 200 // Частицы падают вниз
+            });
         }
     }
 
@@ -133,7 +164,28 @@ export class Player {
         return { gameOver: false };
     }
 
-    handleCollisions(axis, level) {
+    handleItemCollisions(keys, doors) {
+        // Сбор ключей
+        for (const key of keys) {
+            if (key.isActive && checkAABBCollision(this, key)) {
+                key.isActive = false;
+                this.hasKey = true;
+                // Тут можно добавить звук подбора ключа
+            }
+        }
+
+        // Открытие дверей
+        for (const door of doors) {
+            if (door.isLocked && this.hasKey && checkAABBCollision(this, door)) {
+                door.isLocked = false;
+                this.hasKey = false; // Ключ используется
+                // Тут можно добавить звук открытия двери
+            }
+        }
+    }
+
+    handleCollisions(axis, level, platforms, doors) {
+        // Столкновения с тайлами уровня
         for (const tile of level.tiles) {
             if (checkAABBCollision(this, tile)) {
                 if (axis === 'horizontal') {
@@ -145,11 +197,45 @@ export class Player {
                     if (this.velocity.y > 0) {
                         this.position.y = tile.y - this.height;
                         this.isGrounded = true;
+                        this.velocity.y = 0;
+
+                        // Если тайл разрушаемый, запускаем процесс
+                        if (tile.type === 2 && tile.state === 'idle') {
+                            tile.state = 'crumbling';
+                        }
                     } else if (this.velocity.y < 0) {
                         this.position.y = tile.y + tile.height;
+                        this.velocity.y = 0;
                     }
-                    this.velocity.y = 0;
                 }
+            }
+        }
+
+        // Столкновения с движущимися платформами
+        if (axis === 'vertical') {
+            for (const platform of platforms) {
+                if (checkAABBCollision(this, platform)) {
+                    // Условие: игрок падает (velocity.y > 0) и его ноги находятся чуть выше центра платформы
+                    const isLandingOnTop = this.velocity.y > 0 && (this.position.y + this.height) < (platform.position.y + platform.height);
+                    if (isLandingOnTop) {
+                        this.position.y = platform.position.y - this.height;
+                        this.isGrounded = true;
+                        this.onPlatform = platform;
+                        this.velocity.y = 0;
+                    }
+                }
+            }
+        }
+
+        // Столкновения с запертыми дверями
+        for (const door of doors) {
+            if (door.isLocked && checkAABBCollision(this, door)) {
+                 if (axis === 'horizontal') {
+                    if (this.velocity.x > 0) this.position.x = door.position.x - this.width;
+                    else if (this.velocity.x < 0) this.position.x = door.position.x + door.width;
+                    this.velocity.x = 0;
+                }
+                // Вертикальные столкновения с дверью обычно не нужны, если она стоит на земле
             }
         }
     }
