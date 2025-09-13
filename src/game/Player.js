@@ -14,6 +14,9 @@ export class Player {
         this.wasGrounded = false; // Для отслеживания приземления
         this.facingDirection = 1;
 
+        this.jumps = 0;
+        this.maxJumps = 2;
+
         this.audioManager = audioManager;
         this.timeManager = timeManager;
 
@@ -58,11 +61,6 @@ export class Player {
         this.handleCollisions('horizontal', level);
 
         // --- Вертикальное движение ---
-        if ((input.keys.has('ArrowUp') || input.keys.has('Space')) && this.isGrounded) {
-            this.velocity.y = -this.jumpForce;
-            this.isGrounded = false;
-            this.audioManager.playSound('jump', this.timeManager.timeScale);
-        }
         this.velocity.y += this.gravity * dt;
         if (this.velocity.y > this.terminalVelocityY) this.velocity.y = this.terminalVelocityY;
 
@@ -72,6 +70,7 @@ export class Player {
 
         // Проверка приземления
         if (this.isGrounded && !this.wasGrounded) {
+            this.jumps = 0;
             this.audioManager.playSound('land', this.timeManager.timeScale);
         }
 
@@ -85,6 +84,15 @@ export class Player {
         this.updateAnimationState();
         this.sprite.update(deltaTime * this.timeManager.timeScale); // Анимация тоже замедляется
         return { gameOver: false };
+    }
+
+    jump() {
+        if (this.jumps < this.maxJumps) {
+            this.velocity.y = -this.jumpForce;
+            this.isGrounded = false;
+            this.jumps++;
+            this.audioManager.playSound('jump', this.timeManager.timeScale);
+        }
     }
 
     updateAnimationState() {
@@ -115,6 +123,7 @@ export class Player {
                 if (isStomping) {
                     enemy.isActive = false;
                     this.velocity.y = -this.jumpForce * 0.6; // Отскок
+                    this.audioManager.playSound('enemy_stomp', this.timeManager.timeScale);
                 } else {
                     // Столкновение сбоку или снизу
                     return { gameOver: true };
