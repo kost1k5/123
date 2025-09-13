@@ -11,6 +11,8 @@ body {
 canvas {
     background-color: #000;
     display: block;
+    position: relative;
+    z-index: 1000;
 
     /* Адаптивность */
     width: 100%;
