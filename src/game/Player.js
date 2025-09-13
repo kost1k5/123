@@ -32,6 +32,7 @@ export class Player {
         this.terminalVelocityY = 1000;
         this.friction = 0.90;
 
+        this.yOffset = -10; // Смещение для рендеринга спрайта, чтобы он "стоял" на земле
         this.sprite = new Sprite({
             frameWidth: this.width,
             frameHeight: this.height,
@@ -204,68 +205,69 @@ export class Player {
     }
 
     handleCollisions(axis, level, platforms, doors) {
-        // Столкновения с тайлами уровня
-        for (const tile of level.tiles) {
-            if (checkAABBCollision(this, tile)) {
-                if (axis === 'horizontal') {
+        if (axis === 'horizontal') {
+            // --- Горизонтальные столкновения ---
+            // С тайлами
+            for (const tile of level.tiles) {
+                if (checkAABBCollision(this, tile)) {
                     if (this.velocity.x > 0) this.position.x = tile.x - this.width;
                     else if (this.velocity.x < 0) this.position.x = tile.x + tile.width;
                     this.velocity.x = 0;
                 }
-                if (axis === 'vertical') {
-                    if (this.velocity.y > 0) {
+            }
+            // С запертыми дверями
+            for (const door of doors) {
+                if (door.isLocked && checkAABBCollision(this, door)) {
+                    if (this.velocity.x > 0) this.position.x = door.position.x - this.width;
+                    else if (this.velocity.x < 0) this.position.x = door.position.x + door.width;
+                    this.velocity.x = 0;
+                }
+            }
+        }
+
+        if (axis === 'vertical') {
+            // --- Вертикальные столкновения ---
+            // С тайлами
+            for (const tile of level.tiles) {
+                // Проверяем столкновение только если игрок находится над/под тайлом
+                const isHorizontallyAligned = this.position.x < tile.x + tile.width && this.position.x + this.width > tile.x;
+                if (isHorizontallyAligned && checkAABBCollision(this, tile)) {
+                    if (this.velocity.y > 0) { // Падение
                         this.position.y = tile.y - this.height;
                         this.isGrounded = true;
                         this.velocity.y = 0;
-
-                        // Если тайл разрушаемый, запускаем процесс
                         if (tile.type === 2 && tile.state === 'idle') {
                             tile.state = 'crumbling';
                         }
-                    } else if (this.velocity.y < 0) {
+                    } else if (this.velocity.y < 0) { // Прыжок
                         this.position.y = tile.y + tile.height;
                         this.velocity.y = 0;
                     }
                 }
             }
-        }
-
-        // Столкновения с движущимися платформами
-        if (axis === 'vertical') {
+            // С платформами
             for (const platform of platforms) {
-                if (checkAABBCollision(this, platform)) {
-                    // Условие: игрок падает (velocity.y > 0) и его ноги находятся чуть выше центра платформы
-                    const isLandingOnTop = this.velocity.y > 0 && (this.position.y + this.height) < (platform.position.y + platform.height);
-                    if (isLandingOnTop) {
-                        this.position.y = platform.position.y - this.height;
-                        this.isGrounded = true;
-                        this.onPlatform = platform;
-                        this.velocity.y = 0;
-                    }
+                const isLandingOnTop = this.velocity.y > 0 && (this.position.y + this.height) < (platform.position.y + platform.height / 2);
+                if (checkAABBCollision(this, platform) && isLandingOnTop) {
+                    this.position.y = platform.position.y - this.height;
+                    this.isGrounded = true;
+                    this.onPlatform = platform;
+                    this.velocity.y = 0;
                 }
-            }
-        }
-
-        // Столкновения с запертыми дверями
-        for (const door of doors) {
-            if (door.isLocked && checkAABBCollision(this, door)) {
-                 if (axis === 'horizontal') {
-                    if (this.velocity.x > 0) this.position.x = door.position.x - this.width;
-                    else if (this.velocity.x < 0) this.position.x = door.position.x + door.width;
-                    this.velocity.x = 0;
-                }
-                // Вертикальные столкновения с дверью обычно не нужны, если она стоит на земле
             }
         }
     }
 
     draw(context) {
+        const drawX = this.position.x;
+        const drawY = this.position.y + this.yOffset; // Применяем смещение
+
         context.save();
         if (this.facingDirection === -1) {
             context.scale(-1, 1);
-            this.sprite.draw(context, -this.position.x - this.width, this.position.y);
+            this.sprite.draw(context, -drawX - this.width, drawY);
         } else {
-            this.sprite.draw(context, this.position.x, this.position.y);
+            this.sprite.draw(context, drawX, drawY);
         }
         context.restore();
     }
