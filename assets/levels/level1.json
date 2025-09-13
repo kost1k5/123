@@ -24,6 +24,7 @@
     "entities": [
         { "type": "player", "x": 96, "y": 352 },
         { "type": "enemy", "x": 400, "y": 416 },
-        { "type": "enemy", "x": 750, "y": 288 }
+        { "type": "enemy", "x": 750, "y": 288 },
+        { "type": "goal", "x": 896, "y": 352 }
     ]
 }

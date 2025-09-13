@@ -31,7 +31,14 @@ export class InputHandler {
                         const dx = x - (btn.x + btn.width / 2);
                         const dy = y - (btn.y + btn.height / 2);
                         if (dx * dx + dy * dy < (btn.width / 2) * (btn.width / 2)) {
-                            this.keys.add(btn.key);
+                            // Специальная обработка для прыжка
+                            if (btn.key === 'Space') {
+                                if (this.ui.game.player) {
+                                    this.ui.game.player.jump();
+                                }
+                            } else {
+                                this.keys.add(btn.key);
+                            }
                             this.activeTouches.set(touch.identifier, btn.key);
                             break; // Одно касание может активировать только одну кнопку
                         }
