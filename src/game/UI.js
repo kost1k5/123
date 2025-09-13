@@ -115,10 +115,10 @@ export class UI {
         }
 
         // Инструкции по управлению
-        context.fillStyle = 'white';
-        context.font = `16px ${this.fontFamily}`;
+        context.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        context.font = `18px ${this.fontFamily}`;
         context.textAlign = 'center';
-        context.fillText('Управление: ← → (движение), Пробел (прыжок), M (звук)', this.game.width / 2, this.game.height - 30);
+        context.fillText('Управление: ← → (движение), Пробел (прыжок), M (звук)', this.game.width / 2, this.game.height - 50);
     }
 
     drawSettingsMenu(context) {
