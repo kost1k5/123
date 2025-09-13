@@ -51,8 +51,8 @@ window.addEventListener('load', async function() {
             await this.assetManager.downloadAll();
 
             await this.audioManager.loadSounds([
-                { name: 'jump', path: './assets/audio/jump.wav' },
-                { name: 'land', path: './assets/audio/land.wav' },
+                { name: 'jump', path: './assets/audio/jump.mp3' },
+                { name: 'land', path: './assets/audio/land.mp3' },
                 { name: 'enemy_stomp', path: './assets/audio/enemy_stomp.mp3' }
             ]);
 
