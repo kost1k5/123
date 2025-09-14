@@ -36,12 +36,11 @@ window.addEventListener('load', function() {
             this.timeManager = new TimeManager();
             this.saveManager = new SaveManager();
             this.leaderboard = new Leaderboard();
-            this.inputHandler = new InputHandler(canvas, null); // UI еще не создан
             this.camera = new Camera(this.width, this.height);
             this.particleSystem = new ParticleSystem();
             this.level = new Level();
             this.ui = new UI(this);
-            this.inputHandler.ui = this.ui; // Теперь передаем UI в InputHandler
+            this.inputHandler = new InputHandler(canvas, this.ui); // UI передается сразу
 
             const saveData = this.saveManager.load();
             if (saveData && saveData.highScore) this.highScore = saveData.highScore;
