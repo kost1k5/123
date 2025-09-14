@@ -1,47 +1,38 @@
 export class AssetManager {
     constructor() {
-        this.cache = {};
-        this.downloadQueue = [];
+        this.images = {};
+        this.queue = [];
     }
 
-    queueDownload(path) {
-        this.downloadQueue.push(path);
+    queueImage(name, path) {
+        this.queue.push({ name, path });
     }
 
-    getAsset(path) {
-        const asset = this.cache[path];
-        if (!asset) {
-            console.error(`Asset not found in cache: ${path}`);
+    loadAll(callback) {
+        if (this.queue.length === 0) {
+            callback();
+            return;
         }
-        return asset;
-    }
+        const total = this.queue.length;
+        let loaded = 0;
 
-    downloadAll() {
-        // Если очередь пуста, сразу возвращаем выполненный промис
-        if (this.downloadQueue.length === 0) {
-            return Promise.resolve();
-        }
-
-        const promises = [];
-        for (const path of this.downloadQueue) {
-            const promise = new Promise((resolve, reject) => {
-                const img = new Image();
-                img.addEventListener('load', () => {
-                    this.cache[path] = img;
-                    resolve(img);
-                });
-                img.addEventListener('error', (err) => {
-                    console.error(`Failed to load asset: ${path}`);
-                    reject(err);
-                });
-                img.src = path;
+        for (const item of this.queue) {
+            const img = new Image();
+            img.addEventListener('load', () => {
+                this.images[item.name] = img;
+                loaded++;
+                if (loaded === total) callback();
             });
-            promises.push(promise);
+            img.addEventListener('error', () => {
+                console.error(`Не удалось загрузить ресурс: ${item.path}`);
+                loaded++;
+                if (loaded === total) callback();
+            });
+            img.src = item.path;
         }
+    }
 
-        // Очищаем очередь после того, как все промисы созданы
-        this.downloadQueue = [];
-
-        return Promise.all(promises);
+    getImage(name) {
+        return this.images[name];
     }
 }
