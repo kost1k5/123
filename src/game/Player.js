@@ -53,7 +53,6 @@ export class Player {
         this.handleInput(input);
 
         // --- Горизонтальное движение и столкновения ---
-        this.velocity.x *= this.friction;
         if (Math.abs(this.velocity.x) < 0.1) this.velocity.x = 0;
 
         // Ограничение скорости

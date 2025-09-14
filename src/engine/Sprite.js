@@ -29,12 +29,8 @@ export class Sprite {
 
         this.frameTimer += deltaTime;
 
-        // Используем цикл while вместо if. Это гарантирует, что анимация
-        // останется синхронизированной, даже если игра "залагивает" и deltaTime
-        // становится очень большим. Анимация просто пропустит несколько кадров,
-        // вместо того чтобы замедляться.
         while (this.frameTimer > animation.frameInterval) {
-            this.frameTimer -= animation.frameInterval; // Вычитаем интервал, а не обнуляем
+            this.frameTimer -= animation.frameInterval;
             this.currentFrame = (this.currentFrame + 1) % animation.frameCount;
         }
     }
@@ -48,13 +44,12 @@ export class Sprite {
         const sx = this.currentFrame * this.frameWidth;
         const sy = animation.row * this.frameHeight;
 
-        // Добавлена проверка, чтобы избежать ошибок, если изображение еще не загружено
-        if (animation.image.complete && animation.image.naturalHeight !== 0) {
-            context.drawImage(
-                animation.image,
-                sx, sy, this.frameWidth, this.frameHeight,
-                x, y, this.frameWidth, this.frameHeight
-            );
-        }
+        // Убираем излишне строгую проверку. Мы доверяем AssetManager,
+        // который должен был дождаться полной загрузки изображения.
+        context.drawImage(
+            animation.image,
+            sx, sy, this.frameWidth, this.frameHeight,
+            x, y, this.frameWidth, this.frameHeight
+        );
     }
 }
