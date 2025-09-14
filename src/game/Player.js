@@ -26,13 +26,14 @@ export class Player {
 
         // Физические константы
         this.gravity = 980;
-        this.moveSpeed = 250; // Возвращаем адекватную скорость
+        this.moveSpeed = 250;
         this.jumpForce = 500;
         this.maxSpeedX = 300;
         this.terminalVelocityY = 1000;
-        this.friction = 0.85; // Немного увеличим трение для лучшего контроля
+        this.friction = 0.85;
 
-        this.yOffset = -10;
+        // Рекомендация пользователя: установить yOffset в 0 для отладки
+        this.yOffset = 0;
         this.sprite = new Sprite({
             frameWidth: this.width,
             frameHeight: this.height,
@@ -49,44 +50,39 @@ export class Player {
         this.wasGrounded = this.isGrounded;
         const dt = deltaTime / 1000;
 
-        // --- Обработка ввода ---
         this.handleInput(input);
 
         // --- Горизонтальное движение и столкновения ---
         if (Math.abs(this.velocity.x) < 0.1) this.velocity.x = 0;
-
-        // Ограничение скорости
         this.velocity.x = Math.max(-this.maxSpeedX, Math.min(this.maxSpeedX, this.velocity.x));
-
         this.position.x += this.velocity.x * dt;
-        this.handleCollisions('horizontal', level.tiles, doors);
+        // ИСПРАВЛЕНО: Передаем реальное время кадра (dt) для точных столкновений
+        this.handleCollisions('horizontal', level.tiles, doors, platforms, dt);
 
         // --- Вертикальное движение и столкновения ---
         this.velocity.y += this.gravity * dt;
         if (this.velocity.y > this.terminalVelocityY) this.velocity.y = this.terminalVelocityY;
-
         this.position.y += this.velocity.y * dt;
-        this.isGrounded = false; // Сбрасываем перед проверкой
+        this.isGrounded = false;
         this.onPlatform = null;
+        // ИСПРАВЛЕНО: Передаем dt
+        this.handleCollisions('vertical', level.tiles, doors, platforms, dt);
 
-        this.handleCollisions('vertical', level.tiles, doors, platforms);
-
-        // Если стоим на движущейся платформе, двигаемся вместе с ней
         if (this.onPlatform) {
             this.position.x += this.onPlatform.velocity.x * this.onPlatform.direction * dt;
         }
 
-        // Проверка приземления
         if (this.isGrounded && !this.wasGrounded) {
             this.jumps = 0;
             this.audioManager.playSound('land', this.timeManager.timeScale);
             this.emitLandingParticles();
         }
 
-        // Ограничения по границам мира
-        this.clampToLevelBounds(level);
+        // ИСПРАВЛЕНО: Проверка падения за пределы мира
+        if (this.clampAndCheckBounds(level)) {
+            return { gameOver: true }; // Игрок упал -> Конец игры
+        }
 
-        // --- Столкновения с предметами и врагами ---
         this.handleItemCollisions(keys, doors);
         const enemyCollision = this.handleEnemyCollisions(enemies);
         if (enemyCollision.gameOver) {
@@ -95,12 +91,12 @@ export class Player {
 
         // --- Обновление анимации ---
         this.updateAnimationState();
-        this.sprite.update(deltaTime * this.timeManager.timeScale);
+        // ИСПРАВЛЕНО: Используем чистое deltaTime, чтобы анимация игрока не замедлялась
+        this.sprite.update(deltaTime);
         return { gameOver: false };
     }
 
     handleInput(input) {
-        // Горизонтальное движение
         if (input.keys.has('ArrowLeft')) {
             this.velocity.x = -this.moveSpeed;
             this.facingDirection = -1;
@@ -108,11 +104,9 @@ export class Player {
             this.velocity.x = this.moveSpeed;
             this.facingDirection = 1;
         } else {
-            // Применяем трение, только если нет ввода
             this.velocity.x *= this.friction;
         }
 
-        // Прыжок
         const jumpPressed = input.keys.has('Space') || input.keys.has('ArrowUp');
         if (jumpPressed && !this.isJumping) {
             if (this.isGrounded || this.jumps < this.maxJumps) {
@@ -131,20 +125,21 @@ export class Player {
         this.emitJumpParticles();
     }
 
-    handleCollisions(axis, tiles, doors, platforms = []) {
+    // ИСПРАВЛЕНО: Добавляем параметр dt (с безопасным значением по умолчанию)
+    handleCollisions(axis, tiles, doors, platforms = [], dt = 1/60) {
         const allObstacles = [...tiles, ...platforms, ...doors.filter(d => d.isLocked)];
 
         for (const obstacle of allObstacles) {
-            // Пропускаем проверку с платформами при горизонтальном движении
             if (axis === 'horizontal' && platforms.includes(obstacle)) continue;
 
             if (checkAABBCollision(this, obstacle)) {
                 if (axis === 'vertical') {
                     // --- Вертикальные столкновения ---
                     if (this.velocity.y > 0) { // Движемся вниз (падаем)
-                        // Проверяем, что игрок действительно приземляется сверху, а не касается сбоку
-                        const prevBottom = this.position.y + this.height - (this.velocity.y * (1/60)); // Приблизительная позиция в прошлом кадре
-                        if (prevBottom <= obstacle.y) {
+                        // ИСПРАВЛЕНО: Используем реальное dt для расчета предыдущей позиции
+                        const prevBottom = this.position.y + this.height - (this.velocity.y * dt);
+                        // Добавляем небольшой допуск (0.1) для стабильности
+                        if (prevBottom <= obstacle.y + 0.1) {
                             this.position.y = obstacle.y - this.height;
                             this.velocity.y = 0;
                             this.isGrounded = true;
@@ -169,8 +164,12 @@ export class Player {
         }
     }
 
-    clampToLevelBounds(level) {
+    // ИСПРАВЛЕНО: Переименовано из clampToLevelBounds и добавлена проверка падения
+    clampAndCheckBounds(level) {
         const levelPixelWidth = level.width * level.tileSize;
+        const levelPixelHeight = level.height * level.tileSize; // Добавлено
+
+        // Горизонтальные ограничения (как было)
         if (this.position.x < 0) {
             this.position.x = 0;
             this.velocity.x = 0;
@@ -178,6 +177,13 @@ export class Player {
             this.position.x = levelPixelWidth - this.width;
             this.velocity.x = 0;
         }
+
+        // Вертикальная проверка (Kill Plane)
+        // Если игрок упал ниже уровня (с запасом в 200px)
+        if (this.position.y > levelPixelHeight + 200) {
+            return true; // Game Over
+        }
+        return false;
     }
 
     updateAnimationState() {
@@ -188,7 +194,7 @@ export class Player {
                 this.sprite.setState('fall');
             }
         } else {
-            if (Math.abs(this.velocity.x) > 1) { // Используем небольшое пороговое значение
+            if (Math.abs(this.velocity.x) > 1) {
                 this.sprite.setState('run');
             } else {
                 this.sprite.setState('idle');
