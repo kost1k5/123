@@ -175,10 +175,6 @@ window.addEventListener('load', async function() {
                     }
                 }
 
-                if (e.code === 'KeyC' && this.gameState === 'playing') { // Изменено на 'C'
-                    this.audioManager.init();
-                    this.timeManager.toggle();
-                }
                 if (e.code === 'KeyL') {
                     this.showLeaderboard = !this.showLeaderboard;
                     if (this.showLeaderboard) {
@@ -199,8 +195,17 @@ window.addEventListener('load', async function() {
     game.init();
     await game.setup();
 
+    let shiftPressed = false; // Отслеживаем состояние Shift для toggle-режима
+
     async function update(timestep) {
         if (game.gameState !== 'playing' || game.showLeaderboard) return;
+
+        // --- Управление замедлением времени ---
+        const isShiftDown = game.inputHandler.keys.has('ShiftLeft') || game.inputHandler.keys.has('ShiftRight');
+        if (isShiftDown && !shiftPressed) {
+            game.timeManager.toggle();
+        }
+        shiftPressed = isShiftDown;
 
         const scaledTimeStep = timestep * game.timeManager.timeScale;
 
