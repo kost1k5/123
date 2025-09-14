@@ -18,6 +18,7 @@ export class UI {
         this.touchControls = {
             left: { x: 50, y: this.game.height - 90, width: 80, height: 80, key: 'ArrowLeft' },
             right: { x: 150, y: this.game.height - 90, width: 80, height: 80, key: 'ArrowRight' },
+            slow: { x: this.game.width - 230, y: this.game.height - 90, width: 80, height: 80, key: 'ShiftLeft' },
             jump: { x: this.game.width - 130, y: this.game.height - 90, width: 80, height: 80, key: 'Space' }
         };
     }
@@ -124,7 +125,7 @@ export class UI {
         context.fillStyle = 'rgba(255, 255, 255, 0.7)';
         context.font = `18px ${this.fontFamily}`;
         context.textAlign = 'center';
-        context.fillText('Управление: ← → (движение), Пробел (прыжок), C (время), M (звук)', this.game.width / 2, this.game.height - 50);
+        context.fillText('Управление: ← → (движение), Пробел (прыжок), Shift (время), M (звук)', this.game.width / 2, this.game.height - 50);
     }
 
     drawSettingsMenu(context) {
