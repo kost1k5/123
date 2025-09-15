@@ -143,6 +143,10 @@ export class Player {
         for (const obstacle of allObstacles) {
             if (axis === 'horizontal' && platforms.includes(obstacle)) continue;
 
+            if (this.frameCount < 5 && axis === 'vertical' && obstacle.y > 380 && obstacle.y < 390) {
+                console.log(`Checking collision with tile at y=${obstacle.y}. Player bottom: ${this.position.y + this.height}`);
+            }
+
             if (checkAABBCollision(this, obstacle)) {
                 if (axis === 'vertical') {
                     // --- Вертикальные столкновения ---
