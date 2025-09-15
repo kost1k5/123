@@ -6,7 +6,6 @@ export class Player {
     constructor(x, y, { sprites, audioManager, timeManager, particleSystem }) {
         this.position = new Vec2(x, y);
         this.velocity = new Vec2(0, 0);
-        this.frameCount = 0; // For debugging
 
         this.width = 32;
         this.height = 64;
@@ -40,9 +39,9 @@ export class Player {
             frameHeight: this.height,
             animations: {
                 idle: { image: sprites.idle, row: 0, frameCount: 4, frameInterval: 200 },
-                run: { image: sprites.run, row: 1, frameCount: 8, frameInterval: 100 },
-                jump: { image: sprites.jump, row: 2, frameCount: 1, frameInterval: 100 },
-                fall: { image: sprites.fall, row: 3, frameCount: 1, frameInterval: 100 },
+                run: { image: sprites.run, row: 0, frameCount: 8, frameInterval: 100 },
+                jump: { image: sprites.jump, row: 0, frameCount: 1, frameInterval: 100 },
+                fall: { image: sprites.fall, row: 0, frameCount: 1, frameInterval: 100 },
             }
         });
     }
@@ -69,13 +68,6 @@ export class Player {
         // ИСПРАВЛЕНО: Передаем dt
         this.handleCollisions('vertical', level.tiles, doors, platforms, dt);
 
-        // HACK: Force ground state for debugging
-        if (this.frameCount < 10 && this.position.y > 319) {
-            this.isGrounded = true;
-            this.velocity.y = 0;
-            this.position.y = 320;
-        }
-
         if (this.onPlatform) {
             this.position.x += this.onPlatform.velocity.x * this.onPlatform.direction * dt;
         }
@@ -101,16 +93,6 @@ export class Player {
         this.updateAnimationState();
         // ИСПРАВЛЕНО: Используем чистое deltaTime, чтобы анимация игрока не замедлялась
         this.sprite.update(deltaTime);
-
-        if (this.frameCount < 5) {
-            console.log(`Frame ${this.frameCount}:`,
-                `Pos: (${this.position.x.toFixed(2)}, ${this.position.y.toFixed(2)})`,
-                `Vel: (${this.velocity.x.toFixed(2)}, ${this.velocity.y.toFixed(2)})`,
-                `Grounded: ${this.isGrounded}`
-            );
-            this.frameCount++;
-        }
-
         return { gameOver: false };
     }
 
@@ -149,10 +131,6 @@ export class Player {
 
         for (const obstacle of allObstacles) {
             if (axis === 'horizontal' && platforms.includes(obstacle)) continue;
-
-            if (this.frameCount < 5 && axis === 'vertical' && obstacle.y > 380 && obstacle.y < 390) {
-                console.log(`Checking collision with tile at y=${obstacle.y}. Player bottom: ${this.position.y + this.height}`);
-            }
 
             if (checkAABBCollision(this, obstacle)) {
                 if (axis === 'vertical') {
@@ -201,16 +179,8 @@ export class Player {
         }
 
         // Вертикальная проверка (Kill Plane)
-        const isOutOfBounds = this.position.y > levelPixelHeight + 200;
-        if (this.frameCount < 5) {
-            console.log(`Frame ${this.frameCount - 1} bounds check:`,
-                `Player Y: ${this.position.y.toFixed(2)}`,
-                `Kill Plane Y: ${levelPixelHeight + 200}`,
-                `Is Out Of Bounds: ${isOutOfBounds}`
-            );
-        }
         // Если игрок упал ниже уровня (с запасом в 200px)
-        if (isOutOfBounds) {
+        if (this.position.y > levelPixelHeight + 200) {
             return true; // Game Over
         }
         return false;
