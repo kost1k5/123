@@ -5,6 +5,11 @@ export class TimeManager {
         this.isSlowed = false;
     }
 
+    setTimeScale(scale) {
+        this.timeScale = scale;
+        this.isSlowed = scale < 1.0;
+    }
+
     slowDown(scale = 0.5) {
         this.timeScale = scale;
         this.isSlowed = true;
