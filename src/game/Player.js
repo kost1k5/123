@@ -69,6 +69,13 @@ export class Player {
         // ИСПРАВЛЕНО: Передаем dt
         this.handleCollisions('vertical', level.tiles, doors, platforms, dt);
 
+        // HACK: Force ground state for debugging
+        if (this.frameCount < 10 && this.position.y > 319) {
+            this.isGrounded = true;
+            this.velocity.y = 0;
+            this.position.y = 320;
+        }
+
         if (this.onPlatform) {
             this.position.x += this.onPlatform.velocity.x * this.onPlatform.direction * dt;
         }
