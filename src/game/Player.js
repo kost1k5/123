@@ -6,6 +6,7 @@ export class Player {
     constructor(x, y, { sprites, audioManager, timeManager, particleSystem }) {
         this.position = new Vec2(x, y);
         this.velocity = new Vec2(0, 0);
+        this.frameCount = 0; // For debugging
 
         this.width = 32;
         this.height = 64;
@@ -93,6 +94,16 @@ export class Player {
         this.updateAnimationState();
         // ИСПРАВЛЕНО: Используем чистое deltaTime, чтобы анимация игрока не замедлялась
         this.sprite.update(deltaTime);
+
+        if (this.frameCount < 5) {
+            console.log(`Frame ${this.frameCount}:`,
+                `Pos: (${this.position.x.toFixed(2)}, ${this.position.y.toFixed(2)})`,
+                `Vel: (${this.velocity.x.toFixed(2)}, ${this.velocity.y.toFixed(2)})`,
+                `Grounded: ${this.isGrounded}`
+            );
+            this.frameCount++;
+        }
+
         return { gameOver: false };
     }
 
@@ -179,8 +190,16 @@ export class Player {
         }
 
         // Вертикальная проверка (Kill Plane)
+        const isOutOfBounds = this.position.y > levelPixelHeight + 200;
+        if (this.frameCount < 5) {
+            console.log(`Frame ${this.frameCount - 1} bounds check:`,
+                `Player Y: ${this.position.y.toFixed(2)}`,
+                `Kill Plane Y: ${levelPixelHeight + 200}`,
+                `Is Out Of Bounds: ${isOutOfBounds}`
+            );
+        }
         // Если игрок упал ниже уровня (с запасом в 200px)
-        if (this.position.y > levelPixelHeight + 200) {
+        if (isOutOfBounds) {
             return true; // Game Over
         }
         return false;
