@@ -193,12 +193,24 @@ window.addEventListener('load', function() {
     // --- Основной игровой цикл ---
     let lastTime = 0;
     function gameLoop(timestamp) {
+        // Инициализируем lastTime на первом кадре, чтобы избежать огромного deltaTime
+        if (lastTime === 0) {
+            lastTime = timestamp;
+            requestAnimationFrame(gameLoop);
+            return;
+        }
+
         const rawDeltaTime = timestamp - lastTime;
         lastTime = timestamp;
 
         // Не обновляем логику если игра не в фокусе или на паузе
         if (game.gameState === 'playing') {
             game.update(rawDeltaTime);
+        } else if (game.gameState === 'gameOver') {
+            if (game.inputHandler.keys.has('Enter')) {
+                game.inputHandler.keys.delete('Enter'); // Сразу удаляем, чтобы не было многократного срабатывания
+                game.startGame();
+            }
         }
 
         game.draw();
