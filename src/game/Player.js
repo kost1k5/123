@@ -64,7 +64,9 @@ export class Player {
         this.handleCollisions('horizontal', level.tiles, doors, platforms, dt);
 
         // --- Вертикальное движение и столкновения ---
-        this.velocity.y += this.gravity * dt;
+        if (!this.isGrounded) {
+            this.velocity.y += this.gravity * dt;
+        }
         if (this.velocity.y > this.terminalVelocityY) this.velocity.y = this.terminalVelocityY;
         this.position.y += this.velocity.y * dt;
         this.isGrounded = false;
