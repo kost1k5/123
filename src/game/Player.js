@@ -1,9 +1,11 @@
 import { Vec2 } from '../utils/Vec2.js';
 import { checkAABBCollision } from '../utils/Collision.js';
 import { Sprite } from '../engine/Sprite.js';
+import { Logger } from '../utils/Logger.js';
 
 export class Player {
-    constructor(x, y, { sprites, audioManager, timeManager, particleSystem }) {
+    constructor(x, y, { sprites, audioManager, timeManager, particleSystem, logger }) {
+        this.logger = logger || new Logger('Player-Default');
         this.position = new Vec2(x, y);
         this.velocity = new Vec2(0, 0);
 
@@ -39,9 +41,9 @@ export class Player {
             frameHeight: this.height,
             animations: {
                 idle: { image: sprites.idle, row: 0, frameCount: 4, frameInterval: 200 },
-                run: { image: sprites.run, row: 1, frameCount: 8, frameInterval: 100 },
-                jump: { image: sprites.jump, row: 2, frameCount: 1, frameInterval: 100 },
-                fall: { image: sprites.fall, row: 3, frameCount: 1, frameInterval: 100 },
+                run: { image: sprites.run, row: 0, frameCount: 8, frameInterval: 100 },
+                jump: { image: sprites.jump, row: 0, frameCount: 1, frameInterval: 100 },
+                fall: { image: sprites.fall, row: 0, frameCount: 1, frameInterval: 100 },
             }
         });
     }
@@ -49,6 +51,8 @@ export class Player {
     update(deltaTime, input, level, enemies, platforms, keys, doors) {
         this.wasGrounded = this.isGrounded;
         const dt = deltaTime / 1000;
+
+        this.logger.debug(`Update Start: Pos=(${this.position.x.toFixed(2)}, ${this.position.y.toFixed(2)}), Vel=(${this.velocity.x.toFixed(2)}, ${this.velocity.y.toFixed(2)}), Grounded=${this.isGrounded}`);
 
         this.handleInput(input);
 
@@ -132,8 +136,18 @@ export class Player {
         for (const obstacle of allObstacles) {
             if (axis === 'horizontal' && platforms.includes(obstacle)) continue;
 
-            if (checkAABBCollision(this, obstacle)) {
+            const playerBox = { x: this.position.x, y: this.position.y, width: this.width, height: this.height };
+            const obstacleBox = { x: obstacle.x, y: obstacle.y, width: obstacle.width, height: obstacle.height };
+            const didCollide = checkAABBCollision(playerBox, obstacle);
+
+            // Log verbosely for vertical collisions near the player's feet
+            if (axis === 'vertical' && Math.abs(playerBox.y + playerBox.height - obstacleBox.y) < 50) {
+                 this.logger.debug(`Collision Check (Vertical): Player=${JSON.stringify(playerBox)}, Obstacle=${JSON.stringify(obstacleBox)}, Result=${didCollide}`);
+            }
+
+            if (didCollide) {
                 if (axis === 'vertical') {
+                    this.logger.info(`Vertical collision detected with obstacle at (${obstacle.x}, ${obstacle.y})`);
                     // --- Вертикальные столкновения ---
                     if (this.velocity.y > 0) { // Движемся вниз (падаем)
                         // ИСПРАВЛЕНО: Используем реальное dt для расчета предыдущей позиции
@@ -187,18 +201,26 @@ export class Player {
     }
 
     updateAnimationState() {
+        const oldState = this.sprite.currentState;
+        let newState = oldState;
+
         if (!this.isGrounded) {
             if (this.velocity.y < 0) {
-                this.sprite.setState('jump');
+                newState = 'jump';
             } else {
-                this.sprite.setState('fall');
+                newState = 'fall';
             }
         } else {
             if (Math.abs(this.velocity.x) > 1) {
-                this.sprite.setState('run');
+                newState = 'run';
             } else {
-                this.sprite.setState('idle');
+                newState = 'idle';
             }
+        }
+
+        if (newState !== oldState) {
+            this.logger.info(`Animation state change: ${oldState} -> ${newState}`);
+            this.sprite.setState(newState);
         }
     }
 

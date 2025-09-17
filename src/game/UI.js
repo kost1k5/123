@@ -33,6 +33,7 @@ export class UI {
             for (const key in this.menuButtons) {
                 const button = this.menuButtons[key];
                 if (x >= button.x && x <= button.x + button.width && y >= button.y && y <= button.y + button.height) {
+                    this.game.audioManager.init(); // Unlock audio on first user interaction
                     button.action();
                     return; // Exit after one action
                 }
