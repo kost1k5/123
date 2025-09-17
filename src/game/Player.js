@@ -147,9 +147,9 @@ export class Player {
 
             if (didCollide) {
                 if (axis === 'vertical') {
-                    this.logger.info(`Vertical collision detected with obstacle at (${obstacle.x}, ${obstacle.y})`);
+                    this.logger.debug(`Vertical collision detected with obstacle at (${obstacle.x}, ${obstacle.y})`);
                     // --- Вертикальные столкновения ---
-                    if (this.velocity.y > 0) { // Движемся вниз (падаем)
+                    if (this.velocity.y >= 0) { // Движемся вниз (падаем) или стоим на месте
                         // ИСПРАВЛЕНО: Используем реальное dt для расчета предыдущей позиции
                         const prevBottom = this.position.y + this.height - (this.velocity.y * dt);
                         // Добавляем небольшой допуск (0.1) для стабильности
