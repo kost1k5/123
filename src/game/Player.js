@@ -152,16 +152,12 @@ export class Player {
                     this.logger.debug(`Vertical collision detected with obstacle at (${obstacle.x}, ${obstacle.y})`);
                     // --- Вертикальные столкновения ---
                     if (this.velocity.y >= 0) { // Движемся вниз (падаем) или стоим на месте
-                        // ИСПРАВЛЕНО: Используем реальное dt для расчета предыдущей позиции
-                        const prevBottom = this.position.y + this.height - (this.velocity.y * dt);
-                        // Добавляем небольшой допуск (0.1) для стабильности
-                        if (prevBottom <= obstacle.y + 0.1) {
-                            this.position.y = obstacle.y - this.height;
-                            this.velocity.y = 0;
-                            this.isGrounded = true;
-                            if (platforms.includes(obstacle)) {
-                                this.onPlatform = obstacle;
-                            }
+                        // БАГ ИСПРАВЛЕН: Убрана некорректная проверка `prevBottom`, которая приводила к проваливанию.
+                        this.position.y = obstacle.y - this.height;
+                        this.velocity.y = 0;
+                        this.isGrounded = true;
+                        if (platforms.includes(obstacle)) {
+                            this.onPlatform = obstacle;
                         }
                     } else if (this.velocity.y < 0) { // Движемся вверх (прыгаем)
                         this.position.y = obstacle.y + obstacle.height;
