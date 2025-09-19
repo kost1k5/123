@@ -109,7 +109,7 @@ export class Player {
             this.velocity.x = this.moveSpeed;
             this.facingDirection = 1;
         } else {
-            this.velocity.x *= this.friction;
+            this.velocity.x = 0;
         }
 
         const jumpPressed = input.keys.has('Space') || input.keys.has('ArrowUp');
@@ -135,8 +135,6 @@ export class Player {
         const allObstacles = [...tiles, ...platforms, ...doors.filter(d => d.isLocked)];
 
         for (const obstacle of allObstacles) {
-            if (axis === 'horizontal' && platforms.includes(obstacle)) continue;
-
             const playerBox = { x: this.position.x, y: this.position.y, width: this.width, height: this.height };
             const obstacleBox = { x: obstacle.x, y: obstacle.y, width: obstacle.width, height: obstacle.height };
             const didCollide = checkAABBCollision(playerBox, obstacle);
