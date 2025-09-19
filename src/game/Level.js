@@ -1,8 +1,7 @@
 import { Logger } from '../utils/Logger.js';
 
 export class Level {
-    constructor(logger) {
-        this.logger = logger || new Logger('Level-Default');
+    constructor() {
         this.width = 0;
         this.height = 0;
         this.tileSize = 0;
@@ -50,7 +49,7 @@ export class Level {
                 this.tiles.push(tile);
             }
         }
-        this.logger.info(`Level built with ${this.tiles.length} solid tiles.`);
+        Logger.info(`Level built with ${this.tiles.length} solid tiles.`);
 
         // Создаем процедурные фоны для параллакса
         this.backgroundLayers = [
