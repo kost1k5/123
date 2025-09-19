@@ -127,17 +127,17 @@ window.addEventListener('load', function() {
             const scaledDeltaTime = rawDeltaTime * this.timeManager.timeScale;
 
             // --- Обновления ---
-            // Игрок обновляется с ЧИСТЫМ временем
+            // Мир обновляется с МАСШТАБИРОВАННЫМ временем
+            this.platforms.forEach(p => p.update(scaledDeltaTime));
+            this.level.update(scaledDeltaTime);
+            this.enemies.forEach(e => e.update(scaledDeltaTime));
+
+            // Игрок обновляется с ЧИСТЫЫМ временем ПОСЛЕ обновления мира
             const playerStatus = this.player.update(rawDeltaTime, this.inputHandler, this.level, this.enemies, this.platforms, this.keys, this.doors);
             if (playerStatus.gameOver) {
                 this.gameState = 'gameOver';
                 return;
             }
-
-            // Мир обновляется с МАСШТАБИРОВАННЫМ временем
-            this.level.update(scaledDeltaTime);
-            this.enemies.forEach(e => e.update(scaledDeltaTime));
-            this.platforms.forEach(p => p.update(scaledDeltaTime));
             this.particleSystem.update(scaledDeltaTime);
 
             // Камера обновляется ПОСЛЕ движения игрока
