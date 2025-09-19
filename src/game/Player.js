@@ -4,8 +4,7 @@ import { Sprite } from '../engine/Sprite.js';
 import { Logger } from '../utils/Logger.js';
 
 export class Player {
-    constructor(x, y, { sprites, audioManager, timeManager, particleSystem, logger }) {
-        this.logger = logger || new Logger('Player-Default');
+    constructor(x, y, { sprites, audioManager, timeManager, particleSystem }) {
         this.position = new Vec2(x, y);
         this.velocity = new Vec2(0, 0);
 
@@ -52,7 +51,7 @@ export class Player {
         this.wasGrounded = this.isGrounded;
         const dt = deltaTime / 1000;
 
-        this.logger.debug(`Update Start: Pos=(${this.position.x.toFixed(2)}, ${this.position.y.toFixed(2)}), Vel=(${this.velocity.x.toFixed(2)}, ${this.velocity.y.toFixed(2)}), Grounded=${this.isGrounded}`);
+        Logger.debug(`Update Start: Pos=(${this.position.x.toFixed(2)}, ${this.position.y.toFixed(2)}), Vel=(${this.velocity.x.toFixed(2)}, ${this.velocity.y.toFixed(2)}), Grounded=${this.isGrounded}`);
 
         this.handleInput(input);
 
@@ -144,12 +143,12 @@ export class Player {
 
             // Log verbosely for vertical collisions near the player's feet
             if (axis === 'vertical' && Math.abs(playerBox.y + playerBox.height - obstacleBox.y) < 50) {
-                 this.logger.debug(`Collision Check (Vertical): Player=${JSON.stringify(playerBox)}, Obstacle=${JSON.stringify(obstacleBox)}, Result=${didCollide}`);
+                 Logger.debug(`Collision Check (Vertical): Player=${JSON.stringify(playerBox)}, Obstacle=${JSON.stringify(obstacleBox)}, Result=${didCollide}`);
             }
 
             if (didCollide) {
                 if (axis === 'vertical') {
-                    this.logger.debug(`Vertical collision detected with obstacle at (${obstacle.x}, ${obstacle.y})`);
+                    Logger.debug(`Vertical collision detected with obstacle at (${obstacle.x}, ${obstacle.y})`);
                     // --- Вертикальные столкновения ---
                     if (this.velocity.y >= 0) { // Движемся вниз (падаем) или стоим на месте
                         // БАГ ИСПРАВЛЕН: Убрана некорректная проверка `prevBottom`, которая приводила к проваливанию.
@@ -217,7 +216,7 @@ export class Player {
         }
 
         if (newState !== oldState) {
-            this.logger.info(`Animation state change: ${oldState} -> ${newState}`);
+            Logger.info(`Animation state change: ${oldState} -> ${newState}`);
             this.sprite.setState(newState);
         }
     }

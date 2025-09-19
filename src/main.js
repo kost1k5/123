@@ -32,8 +32,7 @@ window.addEventListener('load', function() {
 
         // Инициализация основных модулей
         init() {
-            this.logger = new Logger('Game');
-            this.logger.info('Initializing game...');
+            Logger.info('Initializing game...');
             this.assetManager = new AssetManager();
             this.audioManager = new AudioManager();
             this.timeManager = new TimeManager();
@@ -41,7 +40,7 @@ window.addEventListener('load', function() {
             this.leaderboard = new Leaderboard();
             this.camera = new Camera(this.width, this.height);
             this.particleSystem = new ParticleSystem();
-            this.level = new Level(new Logger('Level'));
+            this.level = new Level();
             this.ui = new UI(this);
             this.inputHandler = new InputHandler(canvas, this.ui); // UI передается сразу
 
@@ -108,7 +107,6 @@ window.addEventListener('load', function() {
                 audioManager: this.audioManager,
                 timeManager: this.timeManager,
                 particleSystem: this.particleSystem,
-                logger: new Logger('Player')
             });
 
             const enemySpritesheet = this.assetManager.getImage('enemy_walk');
