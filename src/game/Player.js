@@ -55,6 +55,11 @@ export class Player {
 
         this.handleInput(input);
 
+        // Применяем трение, если игрок не нажимает клавиши движения
+        if (!input.keys.has('ArrowLeft') && !input.keys.has('ArrowRight')) {
+            this.velocity.x *= this.friction;
+        }
+
         // --- Горизонтальное движение и столкновения ---
         if (Math.abs(this.velocity.x) < 0.1) this.velocity.x = 0;
         this.velocity.x = Math.max(-this.maxSpeedX, Math.min(this.maxSpeedX, this.velocity.x));
@@ -75,6 +80,7 @@ export class Player {
 
         if (this.onPlatform) {
             this.position.x += this.onPlatform.velocity.x * this.onPlatform.direction * dt;
+            this.position.y += this.onPlatform.velocity.y * this.onPlatform.direction * dt;
         }
 
         if (this.isGrounded && !this.wasGrounded) {
@@ -108,8 +114,6 @@ export class Player {
         } else if (input.keys.has('ArrowRight')) {
             this.velocity.x = this.moveSpeed;
             this.facingDirection = 1;
-        } else {
-            this.velocity.x = 0;
         }
 
         const jumpPressed = input.keys.has('Space') || input.keys.has('ArrowUp');
